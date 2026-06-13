@@ -4,6 +4,8 @@ from extract import extract_text_from_pdf, extract_syllabus
 from planner import allocate_hours, generate_weekly_plan, clean_json_response as clean_plan_json
 from pdf_export import generate_pdf, load_timetable
 from remainder import send_daily_nudge
+from dotenv import load_dotenv
+load_dotenv()
 
 st.set_page_config(page_title="StudyPilot", page_icon=":books:", layout="wide")
 st.title("StudyPilot - Your AI Study Companion")
@@ -29,8 +31,9 @@ if st.button("Generate Study Plan"):
                 temp_pdf.write(uploaded_file.read())
                 temp_pdf_path = temp_pdf.name
 
+            api_key = st.secrets.get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
             text = extract_text_from_pdf(temp_pdf_path)
-            raw_output = extract_syllabus(text)
+            raw_output = extract_syllabus(text, api_key=api_key)
             cleaned = clean_syllabus_json(raw_output)
 
         with st.spinner("Building your 7 day plan..."):
@@ -78,7 +81,20 @@ if st.button("Generate Study Plan"):
 
         if email:
             try:
-                send_daily_nudge(email, timetable_data)
+                gmail_id = st.secrets.get("GMAIL_ID") or os.getenv("GMAIL_ID")
+                gmail_password = st.secrets.get("GMAIL_PASSWORD") or os.getenv("GMAIL_PASSWORD")
+                # Ensure timetable_data is converted to rows format expected by send_daily_nudge
+                rows = []
+                for day in timetable_data.get("timetable", []):
+                    for slot in day.get("slots", []):
+                        rows.append({
+                            "date": day["date"],
+                            "subject": slot["subject"],
+                            "topic": ", ".join(slot["chapters_to_cover"]),
+                            "minutes": slot["duration_minutes"],
+                            "notes": slot.get("notes", "")
+                        })
+                send_daily_nudge(rows, email, sender_email=gmail_id, app_password=gmail_password)
                 st.success(f"Daily reminders will be sent to {email}.")
             except Exception as e:
                 st.error(f"Failed to send daily reminders: {e}")

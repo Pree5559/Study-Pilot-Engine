@@ -1,17 +1,16 @@
 import smtplib
-import os
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import date
-from dotenv import load_dotenv
 
-load_dotenv()
-
-def send_daily_nudge(rows, recipient_email):
+def send_daily_nudge(rows, recipient_email, sender_email=None, app_password=None):
+    from dotenv import load_dotenv
+    import os
+    load_dotenv()
+    sender_email = sender_email or os.getenv("GMAIL_ID")
+    app_password = app_password or os.getenv("GMAIL_PASSWORD")
     today = date.today().isoformat()
     today_tasks = [r for r in rows if r['date'] == today]
-    sender_email = os.getenv("GMAIL_ID")
-    app_password = os.getenv("GMAIL_PASSWORD")
     table_rows = "".join(
         f"<tr>"
         f"<td>{r['subject']}</td>"

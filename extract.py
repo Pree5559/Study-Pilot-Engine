@@ -13,10 +13,8 @@ def extract_text_from_pdf(pdf_path):
                 text += page_text + "\n"
     return text
 
-load_dotenv()
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-
-def extract_syllabus(text):
+def extract_syllabus(text, api_key=None):
+    client = Groq(api_key=api_key or os.getenv("GROQ_API_KEY"))
     prompt= f"""
             You are a structured data explorer.
             Extract Only syllabus unit. 
